@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\DialogResult;
 use App\Enums\UserRole;
-use App\Models\AnalysisRule;
+use App\Models\AnalysisEvent;
 use App\Models\Dialog;
 use App\Models\Message;
 use App\Models\User;
@@ -37,14 +37,7 @@ class DashboardControllerTest extends TestCase
         ]);
         Message::factory()->create(['dialog_id' => $notPurchased->id, 'sent_at' => now()->subDay()]);
 
-        $rule = AnalysisRule::factory()->create();
-        $notPurchased->events()->create([
-            'analysis_rule_id' => $rule->id,
-            'severity' => 'high',
-            'title' => 'Пропущен вопрос клиента',
-            'evidence' => [],
-            'detected_at' => now(),
-        ]);
+        AnalysisEvent::factory()->for($notPurchased)->create(['severity' => 'high', 'title' => 'Пропущен вопрос клиента']);
 
         Dialog::factory()->create(['manager_id' => $otherManager->id]);
 

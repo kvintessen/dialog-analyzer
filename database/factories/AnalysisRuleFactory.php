@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Analysis\Rules\SlowResponseRule;
 use App\Enums\EventSeverity;
 use App\Models\AnalysisRule;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -26,5 +27,18 @@ class AnalysisRuleFactory extends Factory
             'enabled' => true,
             'config' => [],
         ];
+    }
+
+    /**
+     * The enabled "slow response" rule with its default 30-minute threshold,
+     * matching AnalysisRuleSeeder — the config tests exercise most often.
+     */
+    public function slowResponse(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'key' => SlowResponseRule::key(),
+            'enabled' => true,
+            'config' => ['threshold_minutes' => 30],
+        ]);
     }
 }

@@ -4,9 +4,9 @@ namespace Tests\Unit\Analysis;
 
 use App\Analysis\AnalysisRule as AnalysisRuleContract;
 use App\Analysis\AnalysisRunner;
-use App\Enums\MessageSender;
 use App\Models\AnalysisRule;
 use App\Models\Dialog;
+use App\Models\Message;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use RuntimeException;
 use Tests\TestCase;
@@ -36,10 +36,10 @@ class AnalysisRunnerTest extends TestCase
     public function test_disabled_rules_do_not_produce_events(): void
     {
         $dialog = Dialog::factory()->create();
-        $dialog->messages()->create(['sender' => MessageSender::Client, 'body' => 'Привет', 'sent_at' => now()->subHour()]);
-        $dialog->messages()->create(['sender' => MessageSender::Manager, 'body' => 'Здравствуйте', 'sent_at' => now()]);
+        Message::factory()->for($dialog)->fromClient()->create(['sent_at' => now()->subHour()]);
+        Message::factory()->for($dialog)->fromManager()->create(['sent_at' => now()]);
 
-        AnalysisRule::factory()->create(['key' => 'slow_response', 'enabled' => false]);
+        AnalysisRule::factory()->slowResponse()->create(['enabled' => false]);
 
         (new AnalysisRunner())->analyze($dialog);
 
@@ -59,14 +59,10 @@ class AnalysisRunnerTest extends TestCase
     public function test_it_persists_events_from_enabled_rules(): void
     {
         $dialog = Dialog::factory()->create();
-        $dialog->messages()->create(['sender' => MessageSender::Client, 'body' => 'Привет', 'sent_at' => now()->subHour()]);
-        $dialog->messages()->create(['sender' => MessageSender::Manager, 'body' => 'Здравствуйте', 'sent_at' => now()]);
+        Message::factory()->for($dialog)->fromClient()->create(['sent_at' => now()->subHour()]);
+        Message::factory()->for($dialog)->fromManager()->create(['sent_at' => now()]);
 
-        $rule = AnalysisRule::factory()->create([
-            'key' => 'slow_response',
-            'enabled' => true,
-            'config' => ['threshold_minutes' => 30],
-        ]);
+        $rule = AnalysisRule::factory()->slowResponse()->create();
 
         (new AnalysisRunner())->analyze($dialog);
 
@@ -77,10 +73,10 @@ class AnalysisRunnerTest extends TestCase
     public function test_re_running_analysis_replaces_previous_events_instead_of_duplicating(): void
     {
         $dialog = Dialog::factory()->create();
-        $dialog->messages()->create(['sender' => MessageSender::Client, 'body' => 'Привет', 'sent_at' => now()->subHour()]);
-        $dialog->messages()->create(['sender' => MessageSender::Manager, 'body' => 'Здравствуйте', 'sent_at' => now()]);
+        Message::factory()->for($dialog)->fromClient()->create(['sent_at' => now()->subHour()]);
+        Message::factory()->for($dialog)->fromManager()->create(['sent_at' => now()]);
 
-        AnalysisRule::factory()->create(['key' => 'slow_response', 'enabled' => true, 'config' => ['threshold_minutes' => 30]]);
+        AnalysisRule::factory()->slowResponse()->create();
 
         $runner = new AnalysisRunner();
         $runner->analyze($dialog);
@@ -92,10 +88,10 @@ class AnalysisRunnerTest extends TestCase
     public function test_a_throwing_rule_rolls_back_and_keeps_previous_events(): void
     {
         $dialog = Dialog::factory()->create();
-        $dialog->messages()->create(['sender' => MessageSender::Client, 'body' => 'Привет', 'sent_at' => now()->subHour()]);
-        $dialog->messages()->create(['sender' => MessageSender::Manager, 'body' => 'Здравствуйте', 'sent_at' => now()]);
+        Message::factory()->for($dialog)->fromClient()->create(['sent_at' => now()->subHour()]);
+        Message::factory()->for($dialog)->fromManager()->create(['sent_at' => now()]);
 
-        $slowResponseRule = AnalysisRule::factory()->create(['key' => 'slow_response', 'enabled' => true, 'config' => ['threshold_minutes' => 30]]);
+        $slowResponseRule = AnalysisRule::factory()->slowResponse()->create();
         (new AnalysisRunner())->analyze($dialog);
         $originalEvent = $dialog->events()->first();
         $this->assertNotNull($originalEvent);

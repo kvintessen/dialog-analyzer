@@ -3,8 +3,8 @@
 namespace Tests\Unit\Analysis;
 
 use App\Analysis\Rules\ClientSilenceAfterManagerRule;
-use App\Enums\MessageSender;
 use App\Models\Dialog;
+use App\Models\Message;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -15,8 +15,8 @@ class ClientSilenceAfterManagerRuleTest extends TestCase
     public function test_it_fires_when_last_message_is_from_manager(): void
     {
         $dialog = Dialog::factory()->create();
-        $dialog->messages()->create(['sender' => MessageSender::Client, 'body' => 'Привет', 'sent_at' => now()->subDay()]);
-        $manager = $dialog->messages()->create(['sender' => MessageSender::Manager, 'body' => 'Ждём вашего решения', 'sent_at' => now()]);
+        Message::factory()->for($dialog)->fromClient()->create(['body' => 'Привет', 'sent_at' => now()->subDay()]);
+        $manager = Message::factory()->for($dialog)->fromManager()->create(['body' => 'Ждём вашего решения', 'sent_at' => now()]);
         $dialog->load('messages');
 
         $events = (new ClientSilenceAfterManagerRule())->evaluate($dialog, []);
@@ -28,8 +28,8 @@ class ClientSilenceAfterManagerRuleTest extends TestCase
     public function test_it_does_not_fire_when_client_replied_last(): void
     {
         $dialog = Dialog::factory()->create();
-        $dialog->messages()->create(['sender' => MessageSender::Manager, 'body' => 'Здравствуйте', 'sent_at' => now()->subDay()]);
-        $dialog->messages()->create(['sender' => MessageSender::Client, 'body' => 'Спасибо, куплю', 'sent_at' => now()]);
+        Message::factory()->for($dialog)->fromManager()->create(['body' => 'Здравствуйте', 'sent_at' => now()->subDay()]);
+        Message::factory()->for($dialog)->fromClient()->create(['body' => 'Спасибо, куплю', 'sent_at' => now()]);
         $dialog->load('messages');
 
         $events = (new ClientSilenceAfterManagerRule())->evaluate($dialog, []);

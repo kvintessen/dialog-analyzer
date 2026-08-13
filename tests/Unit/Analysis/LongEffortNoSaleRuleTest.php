@@ -4,8 +4,8 @@ namespace Tests\Unit\Analysis;
 
 use App\Analysis\Rules\LongEffortNoSaleRule;
 use App\Enums\DialogResult;
-use App\Enums\MessageSender;
 use App\Models\Dialog;
+use App\Models\Message;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -16,11 +16,9 @@ class LongEffortNoSaleRuleTest extends TestCase
     private function createMessages(Dialog $dialog, int $count): void
     {
         for ($i = 0; $i < $count; $i++) {
-            $dialog->messages()->create([
-                'sender' => $i % 2 === 0 ? MessageSender::Client : MessageSender::Manager,
-                'body' => "Сообщение {$i}",
-                'sent_at' => now()->addMinutes($i),
-            ]);
+            $message = Message::factory()->for($dialog);
+            $message = $i % 2 === 0 ? $message->fromClient() : $message->fromManager();
+            $message->create(['body' => "Сообщение {$i}", 'sent_at' => now()->addMinutes($i)]);
         }
     }
 

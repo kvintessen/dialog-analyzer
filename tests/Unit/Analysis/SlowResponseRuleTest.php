@@ -3,8 +3,8 @@
 namespace Tests\Unit\Analysis;
 
 use App\Analysis\Rules\SlowResponseRule;
-use App\Enums\MessageSender;
 use App\Models\Dialog;
+use App\Models\Message;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -15,13 +15,11 @@ class SlowResponseRuleTest extends TestCase
     public function test_it_fires_when_manager_reply_gap_exceeds_threshold(): void
     {
         $dialog = Dialog::factory()->create();
-        $client = $dialog->messages()->create([
-            'sender' => MessageSender::Client,
+        $client = Message::factory()->for($dialog)->fromClient()->create([
             'body' => 'Здравствуйте, расскажите про тариф',
             'sent_at' => now()->subMinutes(60),
         ]);
-        $manager = $dialog->messages()->create([
-            'sender' => MessageSender::Manager,
+        $manager = Message::factory()->for($dialog)->fromManager()->create([
             'body' => 'Добрый день! Сейчас расскажу.',
             'sent_at' => now()->subMinutes(10),
         ]);
@@ -37,13 +35,11 @@ class SlowResponseRuleTest extends TestCase
     public function test_it_does_not_fire_within_threshold(): void
     {
         $dialog = Dialog::factory()->create();
-        $dialog->messages()->create([
-            'sender' => MessageSender::Client,
+        Message::factory()->for($dialog)->fromClient()->create([
             'body' => 'Привет',
             'sent_at' => now()->subMinutes(20),
         ]);
-        $dialog->messages()->create([
-            'sender' => MessageSender::Manager,
+        Message::factory()->for($dialog)->fromManager()->create([
             'body' => 'Здравствуйте!',
             'sent_at' => now()->subMinutes(10),
         ]);
@@ -57,13 +53,11 @@ class SlowResponseRuleTest extends TestCase
     public function test_it_escalates_severity_for_very_long_gaps(): void
     {
         $dialog = Dialog::factory()->create();
-        $dialog->messages()->create([
-            'sender' => MessageSender::Client,
+        Message::factory()->for($dialog)->fromClient()->create([
             'body' => 'Привет',
             'sent_at' => now()->subMinutes(120),
         ]);
-        $dialog->messages()->create([
-            'sender' => MessageSender::Manager,
+        Message::factory()->for($dialog)->fromManager()->create([
             'body' => 'Здравствуйте!',
             'sent_at' => now(),
         ]);
@@ -77,18 +71,15 @@ class SlowResponseRuleTest extends TestCase
     public function test_it_does_not_flag_manager_follow_up_burst_after_client_silence(): void
     {
         $dialog = Dialog::factory()->create();
-        $dialog->messages()->create([
-            'sender' => MessageSender::Client,
+        Message::factory()->for($dialog)->fromClient()->create([
             'body' => 'Обсужу с командой и вернусь.',
             'sent_at' => now()->subDays(2),
         ]);
-        $dialog->messages()->create([
-            'sender' => MessageSender::Manager,
+        Message::factory()->for($dialog)->fromManager()->create([
             'body' => 'Добрый день! Актуально ли ещё предложение?',
             'sent_at' => now()->subDay(),
         ]);
-        $dialog->messages()->create([
-            'sender' => MessageSender::Manager,
+        Message::factory()->for($dialog)->fromManager()->create([
             'body' => 'Если демо было полезно — дайте знать.',
             'sent_at' => now(),
         ]);

@@ -19,7 +19,7 @@ class AnalysisRuleControllerTest extends TestCase
     public function test_index_lists_rules_with_config_schema(): void
     {
         $user = User::factory()->create();
-        AnalysisRule::factory()->create(['key' => 'slow_response', 'name' => 'Долгий ответ']);
+        AnalysisRule::factory()->slowResponse()->create(['name' => 'Долгий ответ']);
 
         $this->actingAs($user)
             ->get(route('analysis-rules.index'))
@@ -91,7 +91,7 @@ class AnalysisRuleControllerTest extends TestCase
     public function test_it_rejects_a_non_integer_value_for_an_integer_config_field(): void
     {
         $user = User::factory()->create();
-        $rule = AnalysisRule::factory()->create(['key' => 'slow_response']);
+        $rule = AnalysisRule::factory()->slowResponse()->create();
 
         $this->actingAs($user)
             ->patch(route('analysis-rules.update', $rule), [
@@ -106,7 +106,7 @@ class AnalysisRuleControllerTest extends TestCase
     public function test_it_accepts_config_matching_the_rules_schema(): void
     {
         $user = User::factory()->create();
-        $rule = AnalysisRule::factory()->create(['key' => 'slow_response']);
+        $rule = AnalysisRule::factory()->slowResponse()->create();
 
         $this->actingAs($user)
             ->patch(route('analysis-rules.update', $rule), [

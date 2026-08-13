@@ -2,9 +2,9 @@
 
 namespace Tests\Feature;
 
-use App\Enums\MessageSender;
 use App\Models\AnalysisRule;
 use App\Models\Dialog;
+use App\Models\Message;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -24,9 +24,9 @@ class DialogAnalysisControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $dialog = Dialog::factory()->create(['manager_id' => $user->id]);
-        $dialog->messages()->create(['sender' => MessageSender::Client, 'body' => 'Привет', 'sent_at' => now()->subHour()]);
-        $dialog->messages()->create(['sender' => MessageSender::Manager, 'body' => 'Здравствуйте', 'sent_at' => now()]);
-        AnalysisRule::factory()->create(['key' => 'slow_response', 'enabled' => true, 'config' => ['threshold_minutes' => 30]]);
+        Message::factory()->for($dialog)->fromClient()->create(['sent_at' => now()->subHour()]);
+        Message::factory()->for($dialog)->fromManager()->create(['sent_at' => now()]);
+        AnalysisRule::factory()->slowResponse()->create();
 
         $this->actingAs($user)->post(route('dialogs.analyze', $dialog))
             ->assertRedirect(route('dialogs.show', $dialog));
@@ -52,8 +52,8 @@ class DialogAnalysisControllerTest extends TestCase
     {
         $analyst = User::factory()->analyst()->create();
         $dialog = Dialog::factory()->create();
-        $dialog->messages()->create(['sender' => MessageSender::Client, 'body' => 'Привет', 'sent_at' => now()]);
-        AnalysisRule::factory()->create(['key' => 'slow_response', 'enabled' => true, 'config' => ['threshold_minutes' => 30]]);
+        Message::factory()->for($dialog)->fromClient()->create(['sent_at' => now()]);
+        AnalysisRule::factory()->slowResponse()->create();
 
         $this->actingAs($analyst)
             ->post(route('dialogs.analyze', $dialog))

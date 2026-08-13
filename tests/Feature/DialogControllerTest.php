@@ -2,9 +2,10 @@
 
 namespace Tests\Feature;
 
-use App\Enums\MessageSender;
+use App\Models\AnalysisEvent;
 use App\Models\AnalysisRule;
 use App\Models\Dialog;
+use App\Models\Message;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -25,7 +26,7 @@ class DialogControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $dialog = Dialog::factory()->create(['manager_id' => $user->id, 'client_name' => 'Иван Тестов']);
-        $dialog->messages()->create(['sender' => MessageSender::Client, 'body' => 'Привет', 'sent_at' => now()]);
+        Message::factory()->for($dialog)->fromClient()->create(['sent_at' => now()]);
 
         $this->actingAs($user)
             ->get(route('dialogs.index'))
@@ -42,14 +43,11 @@ class DialogControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $dialog = Dialog::factory()->create(['manager_id' => $user->id]);
-        $dialog->messages()->create(['sender' => MessageSender::Client, 'body' => 'Привет', 'sent_at' => now()]);
-        $rule = AnalysisRule::factory()->create(['key' => 'slow_response']);
-        $dialog->events()->create([
-            'analysis_rule_id' => $rule->id,
+        Message::factory()->for($dialog)->fromClient()->create(['sent_at' => now()]);
+        $rule = AnalysisRule::factory()->slowResponse()->create();
+        AnalysisEvent::factory()->for($dialog)->for($rule, 'rule')->create([
             'severity' => 'medium',
             'title' => 'Тестовое событие',
-            'evidence' => [],
-            'detected_at' => now(),
         ]);
 
         $this->actingAs($user)
@@ -74,15 +72,12 @@ class DialogControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $dialog = Dialog::factory()->create(['manager_id' => $user->id]);
-        $rule = AnalysisRule::factory()->create(['key' => 'slow_response']);
+        $rule = AnalysisRule::factory()->slowResponse()->create();
 
         foreach (['low', 'high', 'medium'] as $severity) {
-            $dialog->events()->create([
-                'analysis_rule_id' => $rule->id,
+            AnalysisEvent::factory()->for($dialog)->for($rule, 'rule')->create([
                 'severity' => $severity,
                 'title' => "Event {$severity}",
-                'evidence' => [],
-                'detected_at' => now(),
             ]);
         }
 
@@ -98,15 +93,12 @@ class DialogControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $dialog = Dialog::factory()->create(['manager_id' => $user->id]);
-        $rule = AnalysisRule::factory()->create(['key' => 'slow_response']);
+        $rule = AnalysisRule::factory()->slowResponse()->create();
 
         foreach (['low', 'high', 'medium'] as $severity) {
-            $dialog->events()->create([
-                'analysis_rule_id' => $rule->id,
+            AnalysisEvent::factory()->for($dialog)->for($rule, 'rule')->create([
                 'severity' => $severity,
                 'title' => "Event {$severity}",
-                'evidence' => [],
-                'detected_at' => now(),
             ]);
         }
 
@@ -123,7 +115,7 @@ class DialogControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $dialog = Dialog::factory()->create(['manager_id' => $user->id]);
-        $dialog->messages()->create(['sender' => MessageSender::Client, 'body' => 'Привет', 'sent_at' => now()]);
+        Message::factory()->for($dialog)->fromClient()->create(['sent_at' => now()]);
 
         // Assert on the actual JSON the client receives (not the raw PHP prop
         // array), so Carbon's __toString() formatting can't hide a mismatch

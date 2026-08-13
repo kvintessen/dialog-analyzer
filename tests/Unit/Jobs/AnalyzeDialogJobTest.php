@@ -3,10 +3,10 @@
 namespace Tests\Unit\Jobs;
 
 use App\Analysis\AnalysisRunner;
-use App\Enums\MessageSender;
 use App\Jobs\AnalyzeDialogJob;
 use App\Models\AnalysisRule;
 use App\Models\Dialog;
+use App\Models\Message;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -23,9 +23,9 @@ class AnalyzeDialogJobTest extends TestCase
     public function test_handle_runs_analysis_for_the_given_dialog(): void
     {
         $dialog = Dialog::factory()->create();
-        $dialog->messages()->create(['sender' => MessageSender::Client, 'body' => 'Привет', 'sent_at' => now()->subHour()]);
-        $dialog->messages()->create(['sender' => MessageSender::Manager, 'body' => 'Здравствуйте', 'sent_at' => now()]);
-        AnalysisRule::factory()->create(['key' => 'slow_response', 'enabled' => true, 'config' => ['threshold_minutes' => 30]]);
+        Message::factory()->for($dialog)->fromClient()->create(['sent_at' => now()->subHour()]);
+        Message::factory()->for($dialog)->fromManager()->create(['sent_at' => now()]);
+        AnalysisRule::factory()->slowResponse()->create();
 
         (new AnalyzeDialogJob($dialog))->handle(app(AnalysisRunner::class));
 
