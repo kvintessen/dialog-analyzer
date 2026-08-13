@@ -31,9 +31,13 @@ class Dialog extends Model
         return $this->belongsTo(User::class, 'manager_id');
     }
 
+    /**
+     * Ordered by sent_at with id as a tie-breaker: sent_at alone doesn't
+     * guarantee a stable order for messages sharing the same timestamp.
+     */
     public function messages(): HasMany
     {
-        return $this->hasMany(Message::class)->orderBy('sent_at');
+        return $this->hasMany(Message::class)->orderBy('sent_at')->orderBy('id');
     }
 
     public function events(): HasMany
