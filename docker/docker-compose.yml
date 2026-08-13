@@ -16,6 +16,25 @@ services:
     networks:
       - app-network
 
+  queue-worker:
+    build:
+      context: ./php
+      target: dev
+      args:
+        UID: ${UID}
+        GID: ${GID}
+    container_name: laravel-queue-worker
+    working_dir: /var/www/html
+    command: php artisan queue:work --tries=3
+    restart: unless-stopped
+    volumes:
+      - ..:/var/www/html
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - app-network
+
   nginx:
     image: nginx:1.27-alpine
     container_name: laravel-nginx
