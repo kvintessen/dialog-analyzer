@@ -123,14 +123,14 @@ function toggleEnabled(rule, enabled) {
 
     <AuthenticatedLayout>
         <template #header>
-            <h2 class="text-xl font-semibold leading-tight text-gray-800">
+            <h2 class="text-xl font-semibold leading-tight text-foreground">
                 Правила анализа
             </h2>
         </template>
 
         <div class="py-12">
             <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
+                <div class="overflow-hidden bg-card text-card-foreground shadow-sm sm:rounded-lg">
                     <div class="overflow-x-auto p-4">
                         <Table>
                             <TableHeader>
@@ -144,8 +144,8 @@ function toggleEnabled(rule, enabled) {
                             <TableBody>
                                 <TableRow v-for="rule in rules" :key="rule.id">
                                     <TableCell>
-                                        <div class="font-medium text-gray-900">{{ rule.name }}</div>
-                                        <div class="text-xs text-gray-500">{{ rule.description }}</div>
+                                        <div class="font-medium text-foreground">{{ rule.name }}</div>
+                                        <div class="text-xs text-muted-foreground">{{ rule.description }}</div>
                                     </TableCell>
                                     <TableCell>
                                         <Badge :class="severityBadgeClass(rule.severity)">
@@ -181,7 +181,7 @@ function toggleEnabled(rule, enabled) {
                     <div class="space-y-1">
                         <Label for="rule-name">Название</Label>
                         <Input id="rule-name" v-model="form.name" />
-                        <p v-if="form.errors.name" class="text-xs text-red-600">{{ form.errors.name }}</p>
+                        <p v-if="form.errors.name" class="text-xs text-destructive">{{ form.errors.name }}</p>
                     </div>
 
                     <div class="space-y-1">

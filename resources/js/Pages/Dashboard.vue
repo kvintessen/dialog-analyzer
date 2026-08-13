@@ -48,7 +48,7 @@ function formatDateTime(value) {
 
     <AuthenticatedLayout>
         <template #header>
-            <h2 class="text-xl font-semibold leading-tight text-gray-800">
+            <h2 class="text-xl font-semibold leading-tight text-foreground">
                 Dashboard
             </h2>
         </template>
@@ -68,7 +68,7 @@ function formatDateTime(value) {
                             <CardDescription>Купили</CardDescription>
                             <CardTitle class="text-3xl">
                                 {{ stats.purchased_count }}
-                                <span v-if="purchasedRate !== null" class="text-base font-normal text-gray-400">
+                                <span v-if="purchasedRate !== null" class="text-base font-normal text-muted-foreground">
                                     ({{ purchasedRate }}%)
                                 </span>
                             </CardTitle>
@@ -78,7 +78,7 @@ function formatDateTime(value) {
                     <Card>
                         <CardHeader class="pb-2">
                             <CardDescription>Критичных событий</CardDescription>
-                            <CardTitle class="text-3xl" :class="{ 'text-red-600': stats.high_severity_events_count > 0 }">
+                            <CardTitle class="text-3xl" :class="{ 'text-destructive': stats.high_severity_events_count > 0 }">
                                 {{ stats.high_severity_events_count }}
                             </CardTitle>
                         </CardHeader>
@@ -88,7 +88,7 @@ function formatDateTime(value) {
                 <Card>
                     <CardHeader class="flex-row items-center justify-between space-y-0">
                         <CardTitle>Последние диалоги</CardTitle>
-                        <Link :href="route('dialogs.index')" class="text-sm text-gray-500 hover:text-gray-700">
+                        <Link :href="route('dialogs.index')" class="text-sm text-muted-foreground hover:text-foreground">
                             Все диалоги →
                         </Link>
                     </CardHeader>
@@ -116,7 +116,7 @@ function formatDateTime(value) {
                                     <TableCell class="p-0">
                                         <Link
                                             :href="route('dialogs.show', dialog.id)"
-                                            class="block px-4 py-3 font-medium text-gray-900"
+                                            class="block px-4 py-3 font-medium text-foreground"
                                         >
                                             {{ dialog.client_name }}
                                         </Link>
@@ -130,7 +130,7 @@ function formatDateTime(value) {
                                     <TableCell>{{ dialog.messages_count }}</TableCell>
                                     <TableCell>{{ formatDateTime(dialog.last_message_at) }}</TableCell>
                                     <TableCell>
-                                        <span v-if="dialog.events_count === 0" class="text-gray-400">—</span>
+                                        <span v-if="dialog.events_count === 0" class="text-muted-foreground">—</span>
                                         <Badge v-else :class="severityBadgeClass(dialog.max_severity)">
                                             {{ dialog.events_count }} · {{ severityLabel(dialog.max_severity) }}
                                         </Badge>

@@ -37,14 +37,14 @@ function formatDateTime(value) {
 
     <AuthenticatedLayout>
         <template #header>
-            <h2 class="text-xl font-semibold leading-tight text-gray-800">
+            <h2 class="text-xl font-semibold leading-tight text-foreground">
                 Диалоги
             </h2>
         </template>
 
         <div class="py-12">
             <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
+                <div class="overflow-hidden bg-card text-card-foreground shadow-sm sm:rounded-lg">
                     <div class="overflow-x-auto p-4">
                         <Table>
                             <TableHeader>
@@ -69,7 +69,7 @@ function formatDateTime(value) {
                                     <TableCell class="p-0">
                                         <Link
                                             :href="route('dialogs.show', dialog.id)"
-                                            class="block px-4 py-3 font-medium text-gray-900"
+                                            class="block px-4 py-3 font-medium text-foreground"
                                         >
                                             {{ dialog.client_name }}
                                         </Link>
@@ -83,7 +83,7 @@ function formatDateTime(value) {
                                     <TableCell>{{ dialog.messages_count }}</TableCell>
                                     <TableCell>{{ formatDateTime(dialog.last_message_at) }}</TableCell>
                                     <TableCell>
-                                        <span v-if="dialog.events_count === 0" class="text-gray-400">—</span>
+                                        <span v-if="dialog.events_count === 0" class="text-muted-foreground">—</span>
                                         <Badge v-else :class="severityBadgeClass(dialog.max_severity)">
                                             {{ dialog.events_count }} · {{ severityLabel(dialog.max_severity) }}
                                         </Badge>

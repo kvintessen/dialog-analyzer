@@ -1,9 +1,10 @@
 <script setup>
+import InputError from '@/components/InputError.vue';
+import { Button } from '@/components/ui/button';
+import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import GuestLayout from '@/Layouts/GuestLayout.vue';
-import InputError from '@/Components/InputError.vue';
-import InputLabel from '@/Components/InputLabel.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
-import TextInput from '@/Components/TextInput.vue';
 import { Head, useForm } from '@inertiajs/vue3';
 
 defineProps({
@@ -22,47 +23,40 @@ const submit = () => {
 </script>
 
 <template>
+    <Head title="Forgot Password" />
+
     <GuestLayout>
-        <Head title="Forgot Password" />
+        <CardHeader>
+            <CardTitle>Forgot Password</CardTitle>
+            <CardDescription>
+                Forgot your password? No problem. Just let us know your email address and we will email you a
+                password reset link that will allow you to choose a new one.
+            </CardDescription>
+        </CardHeader>
 
-        <div class="mb-4 text-sm text-gray-600">
-            Forgot your password? No problem. Just let us know your email
-            address and we will email you a password reset link that will allow
-            you to choose a new one.
-        </div>
-
-        <div
-            v-if="status"
-            class="mb-4 text-sm font-medium text-green-600"
-        >
-            {{ status }}
-        </div>
-
-        <form @submit.prevent="submit">
-            <div>
-                <InputLabel for="email" value="Email" />
-
-                <TextInput
-                    id="email"
-                    type="email"
-                    class="mt-1 block w-full"
-                    v-model="form.email"
-                    required
-                    autofocus
-                    autocomplete="username"
-                />
-
-                <InputError class="mt-2" :message="form.errors.email" />
+        <CardContent>
+            <div v-if="status" class="mb-4 text-sm font-medium text-green-600 dark:text-green-500">
+                {{ status }}
             </div>
 
-            <div class="mt-4 flex items-center justify-end">
-                <PrimaryButton
-                    :class="{ 'opacity-25': form.processing }"
-                    :disabled="form.processing"
-                >
-                    Email Password Reset Link
-                </PrimaryButton>
-            </div>
-        </form>
+            <form class="space-y-4" @submit.prevent="submit">
+                <div class="space-y-2">
+                    <Label for="email">Email</Label>
+                    <Input
+                        id="email"
+                        v-model="form.email"
+                        type="email"
+                        required
+                        autofocus
+                        autocomplete="username"
+                    />
+                    <InputError :message="form.errors.email" />
+                </div>
+
+                <div class="flex items-center justify-end">
+                    <Button type="submit" :disabled="form.processing">Email Password Reset Link</Button>
+                </div>
+            </form>
+        </CardContent>
     </GuestLayout>
 </template>

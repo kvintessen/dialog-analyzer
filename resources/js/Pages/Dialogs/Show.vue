@@ -83,7 +83,7 @@ function reanalyze() {
     <AuthenticatedLayout>
         <template #header>
             <div class="flex items-center justify-between">
-                <h2 class="text-xl font-semibold leading-tight text-gray-800">
+                <h2 class="text-xl font-semibold leading-tight text-foreground">
                     Диалог с {{ dialog.client_name }}
                 </h2>
                 <Badge :class="resultBadgeClass(dialog.result)">
@@ -95,10 +95,10 @@ function reanalyze() {
         <div class="py-12">
             <div class="mx-auto grid max-w-7xl grid-cols-1 gap-6 sm:px-6 lg:grid-cols-3 lg:px-8">
                 <div class="lg:col-span-2">
-                    <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
-                        <div class="flex items-center justify-between border-b border-gray-100 p-4">
-                            <div class="text-sm text-gray-500">
-                                Менеджер: <span class="font-medium text-gray-800">{{ dialog.manager_name }}</span>
+                    <div class="overflow-hidden bg-card text-card-foreground shadow-sm sm:rounded-lg">
+                        <div class="flex items-center justify-between border-b border-border p-4">
+                            <div class="text-sm text-muted-foreground">
+                                Менеджер: <span class="font-medium text-foreground">{{ dialog.manager_name }}</span>
                             </div>
                         </div>
                         <ScrollArea class="h-[32rem] p-4">
@@ -115,7 +115,7 @@ function reanalyze() {
                                         :class="[
                                             message.sender === 'manager'
                                                 ? 'bg-primary text-primary-foreground'
-                                                : 'bg-gray-100 text-gray-900',
+                                                : 'bg-muted text-foreground',
                                             highlightedMessageId === message.id ? 'ring-2 ring-amber-500' : '',
                                         ]"
                                     >
@@ -132,9 +132,9 @@ function reanalyze() {
                 </div>
 
                 <div>
-                    <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
-                        <div class="flex items-center justify-between border-b border-gray-100 p-4">
-                            <h3 class="font-semibold text-gray-800">
+                    <div class="overflow-hidden bg-card text-card-foreground shadow-sm sm:rounded-lg">
+                        <div class="flex items-center justify-between border-b border-border p-4">
+                            <h3 class="font-semibold text-foreground">
                                 Обнаружено {{ events.length }} {{ pluralizeEvents(events.length) }}
                             </h3>
                             <Button size="sm" variant="outline" :disabled="isAnalyzing" @click="reanalyze">
@@ -143,23 +143,23 @@ function reanalyze() {
                         </div>
 
                         <div class="space-y-3 p-4">
-                            <p v-if="events.length === 0" class="text-sm text-gray-400">
+                            <p v-if="events.length === 0" class="text-sm text-muted-foreground">
                                 Правила анализа не нашли отклонений в этом диалоге.
                             </p>
 
                             <div
                                 v-for="event in events"
                                 :key="event.id"
-                                class="rounded-lg border border-gray-100 p-3"
+                                class="rounded-lg border border-border p-3"
                             >
                                 <div class="mb-1 flex items-center justify-between gap-2">
                                     <Badge :class="severityBadgeClass(event.severity)">
                                         {{ severityLabel(event.severity) }}
                                     </Badge>
-                                    <span class="text-xs text-gray-400">{{ event.rule_name }}</span>
+                                    <span class="text-xs text-muted-foreground">{{ event.rule_name }}</span>
                                 </div>
-                                <p class="text-sm font-medium text-gray-900">{{ event.title }}</p>
-                                <p v-if="event.description" class="mt-1 text-sm text-gray-600">
+                                <p class="text-sm font-medium text-foreground">{{ event.title }}</p>
+                                <p v-if="event.description" class="mt-1 text-sm text-muted-foreground">
                                     {{ event.description }}
                                 </p>
                                 <div
@@ -170,7 +170,7 @@ function reanalyze() {
                                         v-for="messageId in event.evidence.message_ids"
                                         :key="messageId"
                                         type="button"
-                                        class="rounded border border-gray-200 px-2 py-0.5 text-xs text-gray-600 hover:bg-gray-100"
+                                        class="rounded border border-border px-2 py-0.5 text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                                         @click="goToMessage(messageId)"
                                     >
                                         Сообщение №{{ messagePosition[messageId] ?? messageId }}
