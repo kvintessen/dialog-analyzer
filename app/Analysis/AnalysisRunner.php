@@ -40,5 +40,7 @@ class AnalysisRunner
                 }
             }
         });
+
+        $dialog->forceFill(['analysis_failed_at' => null])->save();
     }
 }

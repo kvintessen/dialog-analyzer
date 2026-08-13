@@ -112,4 +112,13 @@ class AnalysisRunnerTest extends TestCase
         $this->assertSame(1, $dialog->events()->count());
         $this->assertSame($originalEvent->id, $dialog->events()->first()->id);
     }
+
+    public function test_successful_analysis_clears_a_previous_failure_flag(): void
+    {
+        $dialog = Dialog::factory()->create(['analysis_failed_at' => now()]);
+
+        (new AnalysisRunner())->analyze($dialog);
+
+        $this->assertNull($dialog->fresh()->analysis_failed_at);
+    }
 }

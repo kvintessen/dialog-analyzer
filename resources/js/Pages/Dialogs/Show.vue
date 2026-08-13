@@ -93,6 +93,16 @@ function reanalyze() {
         </template>
 
         <div class="py-12">
+            <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
+                <div
+                    v-if="dialog.analysis_failed"
+                    class="mb-6 rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive"
+                >
+                    Последний запуск анализа завершился ошибкой. Показаны результаты предыдущего успешного анализа —
+                    попробуйте запустить анализ ещё раз.
+                </div>
+            </div>
+
             <div class="mx-auto grid max-w-7xl grid-cols-1 gap-6 sm:px-6 lg:grid-cols-3 lg:px-8">
                 <div class="lg:col-span-2">
                     <div class="overflow-hidden bg-card text-card-foreground shadow-sm sm:rounded-lg">

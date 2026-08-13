@@ -37,6 +37,7 @@ class DialogController extends Controller
                 'client_name' => $dialog->client_name,
                 'manager_name' => $dialog->manager->name,
                 'result' => $dialog->result->value,
+                'analysis_failed' => $dialog->analysis_failed_at !== null,
             ],
             'messages' => $dialog->messages->map(fn ($message) => [
                 'id' => $message->id,

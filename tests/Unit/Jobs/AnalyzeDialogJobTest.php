@@ -31,4 +31,20 @@ class AnalyzeDialogJobTest extends TestCase
 
         $this->assertSame(1, $dialog->events()->count());
     }
+
+    public function test_it_backs_off_between_retries(): void
+    {
+        $job = new AnalyzeDialogJob(Dialog::factory()->make());
+
+        $this->assertSame([10, 30], $job->backoff());
+    }
+
+    public function test_failed_marks_the_dialog_as_failed(): void
+    {
+        $dialog = Dialog::factory()->create();
+
+        (new AnalyzeDialogJob($dialog))->failed(new \RuntimeException('boom'));
+
+        $this->assertNotNull($dialog->fresh()->analysis_failed_at);
+    }
 }

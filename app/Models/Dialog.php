@@ -22,6 +22,7 @@ class Dialog extends Model
     {
         return [
             'result' => DialogResult::class,
+            'analysis_failed_at' => 'datetime',
         ];
     }
 

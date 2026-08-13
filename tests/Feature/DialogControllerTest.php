@@ -61,6 +61,18 @@ class DialogControllerTest extends TestCase
             );
     }
 
+    public function test_show_exposes_whether_the_last_analysis_failed(): void
+    {
+        $user = User::factory()->create();
+        $dialog = Dialog::factory()->create(['manager_id' => $user->id, 'analysis_failed_at' => now()]);
+
+        $this->actingAs($user)
+            ->get(route('dialogs.show', $dialog))
+            ->assertInertia(fn ($page) => $page
+                ->where('dialog.analysis_failed', true)
+            );
+    }
+
     public function test_show_returns_404_for_unknown_dialog(): void
     {
         $user = User::factory()->create();
