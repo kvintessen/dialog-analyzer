@@ -26,8 +26,9 @@ class SlowResponseRule implements AnalysisRule
         $threshold = (int) ($config['threshold_minutes'] ?? 30);
         $events = [];
         $pendingClientMessage = null;
+        $messages = $dialog->messages->values();
 
-        foreach ($dialog->messages as $message) {
+        foreach ($messages as $index => $message) {
             if ($message->sender === MessageSender::Client) {
                 $pendingClientMessage ??= $message;
 
@@ -36,8 +37,12 @@ class SlowResponseRule implements AnalysisRule
 
             if ($pendingClientMessage !== null) {
                 $gapMinutes = (int) $pendingClientMessage->sent_at->diffInMinutes($message->sent_at);
+                // Another manager message right after, with no client reply in between,
+                // means this is an outbound re-engagement follow-up, not a reply to the client.
+                $nextMessage = $messages->get($index + 1);
+                $isFollowUpBurst = $nextMessage !== null && $nextMessage->sender !== MessageSender::Client;
 
-                if ($gapMinutes > $threshold) {
+                if ($gapMinutes > $threshold && ! $isFollowUpBurst) {
                     $events[] = [
                         'title' => "Долгий ответ менеджера: {$gapMinutes} мин",
                         'description' => 'Клиент написал в '.$pendingClientMessage->sent_at->format('d.m.Y H:i').", менеджер ответил через {$gapMinutes} мин.",

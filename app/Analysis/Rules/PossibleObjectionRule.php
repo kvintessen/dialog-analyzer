@@ -42,7 +42,10 @@ class PossibleObjectionRule implements AnalysisRule
                     continue;
                 }
 
-                if (str_contains($body, mb_strtolower($keyword))) {
+                $keywordLower = mb_strtolower($keyword);
+                $pattern = '/(?<![a-zа-яё0-9])'.preg_quote($keywordLower, '/').'/u';
+
+                if (preg_match($pattern, $body) === 1) {
                     $events[] = [
                         'title' => 'Обнаружено возможное возражение клиента',
                         'description' => "Сообщение клиента содержит слово «{$keyword}».",

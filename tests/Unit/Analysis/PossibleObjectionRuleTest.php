@@ -35,6 +35,27 @@ class PossibleObjectionRuleTest extends TestCase
         $this->assertSame([], (new PossibleObjectionRule())->evaluate($dialog, []));
     }
 
+    public function test_it_does_not_flag_keyword_embedded_in_unrelated_word(): void
+    {
+        $dialog = Dialog::factory()->create();
+        $dialog->messages()->create(['sender' => MessageSender::Client, 'body' => 'О, у вас тут совсем недорого!', 'sent_at' => now()]);
+        $dialog->load('messages');
+
+        $this->assertSame([], (new PossibleObjectionRule())->evaluate($dialog, []));
+    }
+
+    public function test_it_still_matches_keyword_stem_followed_by_suffix(): void
+    {
+        $dialog = Dialog::factory()->create();
+        $message = $dialog->messages()->create(['sender' => MessageSender::Client, 'body' => 'Я подумаю над этим предложением', 'sent_at' => now()]);
+        $dialog->load('messages');
+
+        $events = (new PossibleObjectionRule())->evaluate($dialog, []);
+
+        $this->assertCount(1, $events);
+        $this->assertSame($message->id, $events[0]['evidence']['message_ids'][0]);
+    }
+
     public function test_it_respects_custom_keyword_list_from_config(): void
     {
         $dialog = Dialog::factory()->create();

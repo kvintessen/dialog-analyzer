@@ -74,6 +74,31 @@ class SlowResponseRuleTest extends TestCase
         $this->assertSame('high', $events[0]['severity']);
     }
 
+    public function test_it_does_not_flag_manager_follow_up_burst_after_client_silence(): void
+    {
+        $dialog = Dialog::factory()->create();
+        $dialog->messages()->create([
+            'sender' => MessageSender::Client,
+            'body' => 'Обсужу с командой и вернусь.',
+            'sent_at' => now()->subDays(2),
+        ]);
+        $dialog->messages()->create([
+            'sender' => MessageSender::Manager,
+            'body' => 'Добрый день! Актуально ли ещё предложение?',
+            'sent_at' => now()->subDay(),
+        ]);
+        $dialog->messages()->create([
+            'sender' => MessageSender::Manager,
+            'body' => 'Если демо было полезно — дайте знать.',
+            'sent_at' => now(),
+        ]);
+        $dialog->load('messages');
+
+        $events = (new SlowResponseRule())->evaluate($dialog, ['threshold_minutes' => 30]);
+
+        $this->assertSame([], $events);
+    }
+
     public function test_it_does_not_fail_on_empty_dialog(): void
     {
         $dialog = Dialog::factory()->create();
