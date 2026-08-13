@@ -240,6 +240,9 @@ function toggleEnabled(rule, enabled) {
                             :id="`config-${field.key}`"
                             v-model="configValues[field.key]"
                         />
+                        <p v-if="form.errors[`config.${field.key}`]" class="text-xs text-destructive">
+                            {{ form.errors[`config.${field.key}`] }}
+                        </p>
                     </div>
 
                     <DialogFooter>
