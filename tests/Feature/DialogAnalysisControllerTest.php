@@ -59,4 +59,20 @@ class DialogAnalysisControllerTest extends TestCase
             ->post(route('dialogs.analyze', $dialog))
             ->assertRedirect(route('dialogs.show', $dialog));
     }
+
+    public function test_it_marks_the_dialog_as_failed_instead_of_500ing_when_a_rule_throws(): void
+    {
+        $user = User::factory()->create();
+        $dialog = Dialog::factory()->create(['manager_id' => $user->id]);
+        Message::factory()->for($dialog)->fromClient()->create(['sent_at' => now()]);
+
+        config(['analysis_rules.rules.throwing_rule' => \Tests\Unit\Analysis\ThrowingRule::class]);
+        AnalysisRule::factory()->create(['key' => 'throwing_rule', 'enabled' => true]);
+
+        $this->actingAs($user)
+            ->post(route('dialogs.analyze', $dialog))
+            ->assertRedirect(route('dialogs.show', $dialog));
+
+        $this->assertNotNull($dialog->fresh()->analysis_failed_at);
+    }
 }

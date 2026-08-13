@@ -69,7 +69,13 @@ function reanalyze() {
         {},
         {
             preserveScroll: true,
-            onSuccess: () => toast.success('Анализ диалога обновлён'),
+            onSuccess: (page) => {
+                if (page.props.dialog.analysis_failed) {
+                    toast.error('Не удалось выполнить анализ');
+                } else {
+                    toast.success('Анализ диалога обновлён');
+                }
+            },
             onError: () => toast.error('Не удалось выполнить анализ'),
             onFinish: () => (isAnalyzing.value = false),
         },
