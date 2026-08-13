@@ -16,6 +16,8 @@ docker compose -f docker/docker-compose.yml exec php <команда>   # compos
 
 Laravel 13 (PHP 8.3) + Inertia v2 + Vue 3 (чистый JS, без TS) + shadcn-vue (`new-york`/`zinc`) + Tailwind. Тесты — PHPUnit (не Pest). БД — PostgreSQL в докере (`database.sqlite` не используется). Для тестов — отдельная БД `laravel_test` в том же контейнере `db` (не sqlite): создаётся автоматически из `docker/db/init/01-create-test-db.sql` при первом старте контейнера на чистом volume, конфиг — в `phpunit.xml`. Сброс состояния между тестами — через `RefreshDatabase` в фиче-тестах (транзакция + rollback), схема мигрируется один раз и кешируется. Сейчас в проекте только скелет Breeze-auth + shadcn — своей бизнес-логики нет.
 
+При первом запуске скопировать `.env.testing.example` → `.env.testing` (файл в `.gitignore`, как и `.env`). Без него артизан-команды с `--env=testing` (например, ручной `migrate:fresh --env=testing`) тихо откатятся на обычный `.env` и заденут dev-БД вместо `laravel_test` — `php artisan test` при этом не пострадает, конфиг для него берётся из `phpunit.xml` напрямую.
+
 ## Структура
 
 - `resources/js/Pages/*.vue` — Inertia-страницы, `Layouts/*` — layout'ы (Breeze legacy).
