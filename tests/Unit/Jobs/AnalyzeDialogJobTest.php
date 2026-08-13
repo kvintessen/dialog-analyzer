@@ -9,6 +9,7 @@ use App\Models\Dialog;
 use App\Models\Message;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Tests\TestCase;
 
 class AnalyzeDialogJobTest extends TestCase
@@ -18,6 +19,17 @@ class AnalyzeDialogJobTest extends TestCase
     public function test_it_is_queueable(): void
     {
         $this->assertInstanceOf(ShouldQueue::class, new AnalyzeDialogJob(Dialog::factory()->make()));
+    }
+
+    public function test_it_prevents_overlapping_runs_for_the_same_dialog(): void
+    {
+        $dialog = Dialog::factory()->create();
+
+        $middleware = (new AnalyzeDialogJob($dialog))->middleware();
+
+        $this->assertCount(1, $middleware);
+        $this->assertInstanceOf(WithoutOverlapping::class, $middleware[0]);
+        $this->assertSame((string) $dialog->id, $middleware[0]->key);
     }
 
     public function test_handle_runs_analysis_for_the_given_dialog(): void

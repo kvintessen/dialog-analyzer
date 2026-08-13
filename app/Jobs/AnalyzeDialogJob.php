@@ -8,6 +8,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Queue\SerializesModels;
 use Throwable;
 
@@ -20,6 +21,20 @@ class AnalyzeDialogJob implements ShouldQueue
     public function handle(AnalysisRunner $runner): void
     {
         $runner->analyze($this->dialog);
+    }
+
+    /**
+     * Serializes runs per dialog: several messages arriving in quick
+     * succession each dispatch their own job, but running them concurrently
+     * could let an older job's results overwrite a newer one's. An
+     * overlapping job is released back onto the queue rather than dropped,
+     * so it still runs once the earlier one finishes.
+     */
+    public function middleware(): array
+    {
+        return [
+            (new WithoutOverlapping((string) $this->dialog->id))->releaseAfter(2)->expireAfter(60),
+        ];
     }
 
     /**
