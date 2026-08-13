@@ -17,7 +17,12 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
         ]);
 
-        //
+        // Inbound channel webhooks are machine-to-machine POSTs with no
+        // browser session/CSRF token — auth is the adapter's own secret
+        // check instead (see InboundMessageWebhookController).
+        $middleware->validateCsrfTokens(except: [
+            'webhooks/*',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

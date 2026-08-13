@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['manager_id', 'client_name', 'result'])]
+#[Fillable(['manager_id', 'client_name', 'result', 'source', 'external_thread_id'])]
 class Dialog extends Model
 {
     /** @use HasFactory<DialogFactory> */

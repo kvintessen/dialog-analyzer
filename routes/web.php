@@ -4,6 +4,7 @@ use App\Http\Controllers\AnalysisRuleController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DialogAnalysisController;
 use App\Http\Controllers\DialogController;
+use App\Http\Controllers\InboundMessageWebhookController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -11,6 +12,12 @@ use Inertia\Inertia;
 Route::get('/', function () {
     return Inertia::render('Home');
 });
+
+// Machine-to-machine ingestion, not a browser session — auth is the
+// per-channel adapter's own signature/secret check, not Laravel's auth
+// middleware. See InboundMessageWebhookController and
+// config/inbound_channels.php.
+Route::post('/webhooks/{channel}', [InboundMessageWebhookController::class, 'store'])->name('webhooks.inbound');
 
 Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
