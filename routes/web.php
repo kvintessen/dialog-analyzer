@@ -11,7 +11,7 @@ use Inertia\Inertia;
 
 Route::get('/', function () {
     return Inertia::render('Home');
-});
+})->name('home');
 
 // Machine-to-machine ingestion, not a browser session — auth is the
 // per-channel adapter's own signature/secret check, not Laravel's auth
