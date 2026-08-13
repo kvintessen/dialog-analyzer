@@ -71,7 +71,52 @@ function openEditor(rule) {
     dialogOpen.value = true;
 }
 
+// Mirrors UpdateAnalysisRuleRequest::configFieldRules() so obviously invalid
+// input is caught before a round trip, without duplicating the server as the
+// source of truth — the backend still re-validates on submit.
+function validate() {
+    const errors = {};
+
+    if (!form.name.trim()) {
+        errors.name = 'Поле «Название» обязательно для заполнения.';
+    } else if (form.name.length > 255) {
+        errors.name = 'Поле «Название» не должно превышать 255 символов.';
+    }
+
+    editingRule.value.config_schema.forEach((field) => {
+        const value = configValues[field.key];
+        const errorKey = `config.${field.key}`;
+
+        if (field.type === 'integer') {
+            if (String(value ?? '').trim() === '' || Number.isNaN(Number.parseInt(value, 10))) {
+                errors[errorKey] = `Поле «${field.label}» обязательно для заполнения.`;
+            }
+        } else if (field.type === 'string_list') {
+            const items = String(value ?? '')
+                .split('\n')
+                .map((line) => line.trim())
+                .filter(Boolean);
+
+            if (items.length === 0) {
+                errors[errorKey] = `Поле «${field.label}» обязательно для заполнения.`;
+            }
+        } else if (!String(value ?? '').trim()) {
+            errors[errorKey] = `Поле «${field.label}» обязательно для заполнения.`;
+        }
+    });
+
+    form.clearErrors();
+    form.setError(errors);
+
+    return Object.keys(errors).length === 0;
+}
+
 function submit() {
+    if (!validate()) {
+        toast.error('Проверьте поля формы');
+        return;
+    }
+
     const config = {};
 
     editingRule.value.config_schema.forEach((field) => {
