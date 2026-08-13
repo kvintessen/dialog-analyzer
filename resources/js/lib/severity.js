@@ -19,9 +19,9 @@ export function severityBadgeClass(severity) {
         case 'high':
             return 'border-transparent bg-red-600 text-white hover:bg-red-600/90';
         case 'medium':
-            return 'border-transparent bg-amber-500 text-white hover:bg-amber-500/90';
+            return 'border-transparent bg-amber-700 text-white hover:bg-amber-700/90';
         case 'low':
-            return 'border-transparent bg-slate-400 text-white hover:bg-slate-400/90';
+            return 'border-transparent bg-slate-600 text-white hover:bg-slate-600/90';
         default:
             return '';
     }
@@ -34,10 +34,10 @@ export function resultLabel(result) {
 export function resultBadgeClass(result) {
     switch (result) {
         case 'purchased':
-            return 'border-transparent bg-emerald-600 text-white hover:bg-emerald-600/90';
+            return 'border-transparent bg-emerald-700 text-white hover:bg-emerald-700/90';
         case 'not_purchased':
             return 'border-transparent bg-red-600 text-white hover:bg-red-600/90';
         default:
-            return 'border-transparent bg-slate-400 text-white hover:bg-slate-400/90';
+            return 'border-transparent bg-slate-600 text-white hover:bg-slate-600/90';
     }
 }

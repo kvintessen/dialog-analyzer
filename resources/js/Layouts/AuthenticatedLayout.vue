@@ -84,16 +84,22 @@ const navLinks = [
                             <Button
                                 variant="ghost"
                                 size="icon"
+                                :aria-expanded="showingNavigationDropdown"
+                                aria-controls="mobile-navigation-menu"
                                 @click="showingNavigationDropdown = !showingNavigationDropdown"
                             >
                                 <Menu v-if="!showingNavigationDropdown" class="h-6 w-6" />
                                 <X v-else class="h-6 w-6" />
+                                <span class="sr-only">{{ showingNavigationDropdown ? 'Закрыть меню' : 'Открыть меню' }}</span>
                             </Button>
                         </div>
                     </div>
                 </div>
 
-                <div :class="cn('sm:hidden', showingNavigationDropdown ? 'block' : 'hidden')">
+                <div
+                    id="mobile-navigation-menu"
+                    :class="cn('sm:hidden', showingNavigationDropdown ? 'block' : 'hidden')"
+                >
                     <div class="space-y-1 pb-3 pt-2">
                         <Link
                             v-for="link in navLinks"

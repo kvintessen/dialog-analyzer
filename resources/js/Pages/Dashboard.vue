@@ -12,7 +12,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { resultBadgeClass, resultLabel, severityBadgeClass, severityLabel } from '@/lib/severity';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
 const props = defineProps({
@@ -112,11 +112,13 @@ function formatDateTime(value) {
                                     v-for="dialog in recentDialogs"
                                     :key="dialog.id"
                                     class="cursor-pointer"
+                                    @click="router.visit(route('dialogs.show', dialog.id))"
                                 >
                                     <TableCell class="p-0">
                                         <Link
                                             :href="route('dialogs.show', dialog.id)"
                                             class="block px-4 py-3 font-medium text-foreground"
+                                            @click.stop
                                         >
                                             {{ dialog.client_name }}
                                         </Link>
