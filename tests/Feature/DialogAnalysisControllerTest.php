@@ -23,7 +23,7 @@ class DialogAnalysisControllerTest extends TestCase
     public function test_it_reruns_analysis_and_replaces_events(): void
     {
         $user = User::factory()->create();
-        $dialog = Dialog::factory()->create();
+        $dialog = Dialog::factory()->create(['manager_id' => $user->id]);
         $dialog->messages()->create(['sender' => MessageSender::Client, 'body' => 'Привет', 'sent_at' => now()->subHour()]);
         $dialog->messages()->create(['sender' => MessageSender::Manager, 'body' => 'Здравствуйте', 'sent_at' => now()]);
         AnalysisRule::factory()->create(['key' => 'slow_response', 'enabled' => true, 'config' => ['threshold_minutes' => 30]]);
@@ -36,5 +36,27 @@ class DialogAnalysisControllerTest extends TestCase
         $this->actingAs($user)->post(route('dialogs.analyze', $dialog));
 
         $this->assertSame(1, $dialog->events()->count());
+    }
+
+    public function test_manager_cannot_analyze_another_managers_dialog(): void
+    {
+        $manager = User::factory()->manager()->create();
+        $dialog = Dialog::factory()->create();
+
+        $this->actingAs($manager)
+            ->post(route('dialogs.analyze', $dialog))
+            ->assertForbidden();
+    }
+
+    public function test_analyst_can_analyze_any_dialog(): void
+    {
+        $analyst = User::factory()->analyst()->create();
+        $dialog = Dialog::factory()->create();
+        $dialog->messages()->create(['sender' => MessageSender::Client, 'body' => 'Привет', 'sent_at' => now()]);
+        AnalysisRule::factory()->create(['key' => 'slow_response', 'enabled' => true, 'config' => ['threshold_minutes' => 30]]);
+
+        $this->actingAs($analyst)
+            ->post(route('dialogs.analyze', $dialog))
+            ->assertRedirect(route('dialogs.show', $dialog));
     }
 }

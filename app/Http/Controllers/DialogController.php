@@ -4,16 +4,21 @@ namespace App\Http\Controllers;
 
 use App\Models\AnalysisEvent;
 use App\Models\Dialog;
+use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class DialogController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response
     {
+        $user = $request->user();
+
         $dialogs = Dialog::query()
+            ->when(! $user->isAnalyst(), fn ($query) => $query->where('manager_id', $user->id))
             ->with(['manager:id,name', 'events:id,dialog_id,severity'])
             ->withCount('messages')
             ->withMax('messages as last_message_at', 'sent_at')
@@ -36,6 +41,8 @@ class DialogController extends Controller
 
     public function show(Dialog $dialog): Response
     {
+        Gate::authorize('view', $dialog);
+
         $dialog->load(['manager:id,name', 'messages', 'events.rule']);
 
         return Inertia::render('Dialogs/Show', [

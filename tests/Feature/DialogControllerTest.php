@@ -24,7 +24,7 @@ class DialogControllerTest extends TestCase
     public function test_index_lists_dialogs_with_summary_data(): void
     {
         $user = User::factory()->create();
-        $dialog = Dialog::factory()->create(['client_name' => 'Иван Тестов']);
+        $dialog = Dialog::factory()->create(['manager_id' => $user->id, 'client_name' => 'Иван Тестов']);
         $dialog->messages()->create(['sender' => MessageSender::Client, 'body' => 'Привет', 'sent_at' => now()]);
 
         $this->actingAs($user)
@@ -41,7 +41,7 @@ class DialogControllerTest extends TestCase
     public function test_show_returns_messages_and_events_for_a_dialog(): void
     {
         $user = User::factory()->create();
-        $dialog = Dialog::factory()->create();
+        $dialog = Dialog::factory()->create(['manager_id' => $user->id]);
         $dialog->messages()->create(['sender' => MessageSender::Client, 'body' => 'Привет', 'sent_at' => now()]);
         $rule = AnalysisRule::factory()->create(['key' => 'slow_response']);
         $dialog->events()->create([
@@ -73,7 +73,7 @@ class DialogControllerTest extends TestCase
     public function test_index_reports_the_highest_severity_among_a_dialogs_events(): void
     {
         $user = User::factory()->create();
-        $dialog = Dialog::factory()->create();
+        $dialog = Dialog::factory()->create(['manager_id' => $user->id]);
         $rule = AnalysisRule::factory()->create(['key' => 'slow_response']);
 
         foreach (['low', 'high', 'medium'] as $severity) {
@@ -97,7 +97,7 @@ class DialogControllerTest extends TestCase
     public function test_show_orders_events_by_severity_descending(): void
     {
         $user = User::factory()->create();
-        $dialog = Dialog::factory()->create();
+        $dialog = Dialog::factory()->create(['manager_id' => $user->id]);
         $rule = AnalysisRule::factory()->create(['key' => 'slow_response']);
 
         foreach (['low', 'high', 'medium'] as $severity) {
@@ -122,7 +122,7 @@ class DialogControllerTest extends TestCase
     public function test_index_serializes_last_message_at_like_other_timestamps(): void
     {
         $user = User::factory()->create();
-        $dialog = Dialog::factory()->create();
+        $dialog = Dialog::factory()->create(['manager_id' => $user->id]);
         $dialog->messages()->create(['sender' => MessageSender::Client, 'body' => 'Привет', 'sent_at' => now()]);
 
         // Assert on the actual JSON the client receives (not the raw PHP prop
@@ -136,5 +136,49 @@ class DialogControllerTest extends TestCase
                     fn (string $value) => (bool) preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/', $value)
                 )
             );
+    }
+
+    public function test_manager_only_sees_their_own_dialogs_in_index(): void
+    {
+        $manager = User::factory()->manager()->create();
+        $ownDialog = Dialog::factory()->create(['manager_id' => $manager->id, 'client_name' => 'Свой клиент']);
+        Dialog::factory()->create(['client_name' => 'Чужой клиент']);
+
+        $this->actingAs($manager)
+            ->get(route('dialogs.index'))
+            ->assertInertia(fn ($page) => $page
+                ->has('dialogs', 1)
+                ->where('dialogs.0.id', $ownDialog->id)
+            );
+    }
+
+    public function test_analyst_sees_all_dialogs_in_index(): void
+    {
+        $analyst = User::factory()->analyst()->create();
+        Dialog::factory()->count(2)->create();
+
+        $this->actingAs($analyst)
+            ->get(route('dialogs.index'))
+            ->assertInertia(fn ($page) => $page->has('dialogs', 2));
+    }
+
+    public function test_manager_cannot_view_another_managers_dialog(): void
+    {
+        $manager = User::factory()->manager()->create();
+        $dialog = Dialog::factory()->create();
+
+        $this->actingAs($manager)
+            ->get(route('dialogs.show', $dialog))
+            ->assertForbidden();
+    }
+
+    public function test_analyst_can_view_any_dialog(): void
+    {
+        $analyst = User::factory()->analyst()->create();
+        $dialog = Dialog::factory()->create();
+
+        $this->actingAs($analyst)
+            ->get(route('dialogs.show', $dialog))
+            ->assertOk();
     }
 }
