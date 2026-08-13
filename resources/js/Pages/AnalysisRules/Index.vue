@@ -1,5 +1,4 @@
 <script setup>
-import { reactive, ref } from 'vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -30,12 +29,15 @@ import {
 } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { severityBadgeClass, severityLabel } from '@/lib/severity';
-import { Head, router, useForm } from '@inertiajs/vue3';
+import { Head, router, useForm, usePage } from '@inertiajs/vue3';
+import { computed, reactive, ref } from 'vue';
 import { toast } from 'vue-sonner';
 
 defineProps({
     rules: { type: Array, required: true },
 });
+
+const canEdit = computed(() => usePage().props.auth.user.role === 'analyst');
 
 const dialogOpen = ref(false);
 const editingRule = ref(null);
@@ -155,11 +157,17 @@ function toggleEnabled(rule, enabled) {
                                     <TableCell>
                                         <Switch
                                             :model-value="rule.enabled"
+                                            :disabled="!canEdit"
                                             @update:model-value="(value) => toggleEnabled(rule, value)"
                                         />
                                     </TableCell>
                                     <TableCell class="text-right">
-                                        <Button size="sm" variant="outline" @click="openEditor(rule)">
+                                        <Button
+                                            v-if="canEdit"
+                                            size="sm"
+                                            variant="outline"
+                                            @click="openEditor(rule)"
+                                        >
                                             Редактировать
                                         </Button>
                                     </TableCell>

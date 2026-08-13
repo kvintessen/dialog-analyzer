@@ -6,6 +6,7 @@ use App\Analysis\RuleRegistry;
 use App\Http\Requests\UpdateAnalysisRuleRequest;
 use App\Models\AnalysisRule;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -32,6 +33,8 @@ class AnalysisRuleController extends Controller
 
     public function update(UpdateAnalysisRuleRequest $request, AnalysisRule $analysisRule): RedirectResponse
     {
+        Gate::authorize('update', $analysisRule);
+
         $analysisRule->update($request->validated());
 
         return back()->with('success', 'Правило обновлено.');

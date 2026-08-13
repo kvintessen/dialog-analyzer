@@ -18,7 +18,7 @@ class AnalysisRuleControllerTest extends TestCase
 
     public function test_index_lists_rules_with_config_schema(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->manager()->create();
         AnalysisRule::factory()->slowResponse()->create(['name' => 'Долгий ответ']);
 
         $this->actingAs($user)
@@ -34,7 +34,7 @@ class AnalysisRuleControllerTest extends TestCase
 
     public function test_it_can_toggle_a_rule_off(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->analyst()->create();
         $rule = AnalysisRule::factory()->create(['enabled' => true]);
 
         $this->actingAs($user)
@@ -52,7 +52,7 @@ class AnalysisRuleControllerTest extends TestCase
 
     public function test_it_validates_severity(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->analyst()->create();
         $rule = AnalysisRule::factory()->create();
 
         $this->actingAs($user)
@@ -73,9 +73,27 @@ class AnalysisRuleControllerTest extends TestCase
             ->assertRedirect(route('login'));
     }
 
+    public function test_manager_cannot_update_rules(): void
+    {
+        $manager = User::factory()->manager()->create();
+        $rule = AnalysisRule::factory()->create(['enabled' => true]);
+
+        $this->actingAs($manager)
+            ->patch(route('analysis-rules.update', $rule), [
+                'name' => $rule->name,
+                'description' => $rule->description,
+                'severity' => 'medium',
+                'enabled' => false,
+                'config' => [],
+            ])
+            ->assertForbidden();
+
+        $this->assertTrue($rule->fresh()->enabled);
+    }
+
     public function test_it_rejects_a_non_array_value_for_a_string_list_config_field(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->analyst()->create();
         $rule = AnalysisRule::factory()->create(['key' => 'possible_objection']);
 
         $this->actingAs($user)
@@ -90,7 +108,7 @@ class AnalysisRuleControllerTest extends TestCase
 
     public function test_it_rejects_a_non_integer_value_for_an_integer_config_field(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->analyst()->create();
         $rule = AnalysisRule::factory()->slowResponse()->create();
 
         $this->actingAs($user)
@@ -105,7 +123,7 @@ class AnalysisRuleControllerTest extends TestCase
 
     public function test_it_accepts_config_matching_the_rules_schema(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->analyst()->create();
         $rule = AnalysisRule::factory()->slowResponse()->create();
 
         $this->actingAs($user)
