@@ -5,6 +5,7 @@ import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
 import NavLink from '@/Components/NavLink.vue';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue';
+import { Toaster } from '@/components/ui/sonner';
 import { Link } from '@inertiajs/vue3';
 
 const showingNavigationDropdown = ref(false);
@@ -38,6 +39,18 @@ const showingNavigationDropdown = ref(false);
                                     :active="route().current('dashboard')"
                                 >
                                     Dashboard
+                                </NavLink>
+                                <NavLink
+                                    :href="route('dialogs.index')"
+                                    :active="route().current('dialogs.*')"
+                                >
+                                    Диалоги
+                                </NavLink>
+                                <NavLink
+                                    :href="route('analysis-rules.index')"
+                                    :active="route().current('analysis-rules.*')"
+                                >
+                                    Правила анализа
                                 </NavLink>
                             </div>
                         </div>
@@ -146,6 +159,18 @@ const showingNavigationDropdown = ref(false);
                         >
                             Dashboard
                         </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            :href="route('dialogs.index')"
+                            :active="route().current('dialogs.*')"
+                        >
+                            Диалоги
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            :href="route('analysis-rules.index')"
+                            :active="route().current('analysis-rules.*')"
+                        >
+                            Правила анализа
+                        </ResponsiveNavLink>
                     </div>
 
                     <!-- Responsive Settings Options -->
@@ -194,5 +219,7 @@ const showingNavigationDropdown = ref(false);
                 <slot />
             </main>
         </div>
+
+        <Toaster position="bottom-right" rich-colors />
     </div>
 </template>

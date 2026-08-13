@@ -1,58 +1,154 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Dialog Analyzer
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Внутренний сервис для анализа диалогов менеджеров с клиентами: авторизация,
+просмотр переписок и автоматический поиск в них потенциально важных ситуаций
+(долгий ответ, клиент замолчал, возражение, затянутый диалог без продажи) по
+настраиваемым правилам.
 
-## About Laravel
+Стек: PHP 8.3 / Laravel 13, Inertia v2 + Vue 3 (Composition API, без TS),
+shadcn-vue, PostgreSQL, Docker Compose.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
-
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
-
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
-
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+## Быстрый старт
 
 ```bash
-composer require laravel/boost --dev
+git clone <repo> dialog-analyzer && cd dialog-analyzer
+cp .env.example .env
+cp .env.testing.example .env.testing   # нужен только для php artisan test с --env=testing
 
-php artisan boost:install
+docker compose -f docker/docker-compose.yml up -d --build
+docker compose -f docker/docker-compose.yml exec php composer install
+docker compose -f docker/docker-compose.yml exec php php artisan key:generate
+docker compose -f docker/docker-compose.yml exec php php artisan migrate --seed
+docker compose -f docker/docker-compose.yml exec php npm install
+docker compose -f docker/docker-compose.yml exec php npm run build
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Приложение — http://localhost:8080. `docker/.env` уже содержит рабочие
+значения по умолчанию (порты, креды Postgres, UID/GID), отдельно
+настраивать не нужно.
 
-## Contributing
+Тестовые пользователи (пароль у всех `password`):
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+| Email | Роль в датасете |
+|---|---|
+| `test@example.com` | базовый пользователь для входа |
+| `ivan@example.com`, `anna@example.com`, `igor@example.com` | менеджеры, за которыми закреплены сидированные диалоги |
 
-## Code of Conduct
+Все аутентифицированные пользователи видят все диалоги — это внутренний
+инструмент без разграничения по ролям (см. «Ограничения» ниже).
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Тесты: `docker compose -f docker/docker-compose.yml exec php php artisan test`
+(отдельная БД `laravel_test`, конфиг в `phpunit.xml`, схема мигрируется
+и кешируется автоматически через `RefreshDatabase`).
 
-## Security Vulnerabilities
+## Модель данных
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```
+users 1───* dialogs 1───* messages
+                 │
+                 └──────* analysis_events *───1 analysis_rules
+```
 
-## License
+- **dialogs** — `manager_id`, `client_name`, `result` (`purchased` /
+  `not_purchased` / `undecided`). Даты начала и последнего сообщения не
+  хранятся отдельной колонкой — берутся из `messages` через `withMax`, чтобы
+  не дублировать данные, которые и так восстановимы из переписки.
+- **messages** — `sender` (`manager` / `client`), `body`, `sent_at` (бизнес-время
+  сообщения, отдельно от служебного `created_at`). Индекс `(dialog_id, sent_at)`
+  под сортировку переписки и работу правил анализа с последовательностью
+  сообщений.
+- **analysis_rules** — каталог правил: `key` (связывает строку с PHP-классом),
+  `name`, `description`, `severity` (критичность по умолчанию), `enabled`,
+  `config` (jsonb — параметры конкретного правила, например порог в минутах).
+  Это то, что видно и редактируется в разделе «Правила анализа».
+  Именно эта таблица делает пороги, критичность и включение/выключение
+  редактируемыми без деплоя.
+- **analysis_events** — найденные события: `severity` и `title`/`description`
+  — снэпшот на момент обнаружения (не меняются задним числом, если правило
+  потом отредактировали), `evidence` (jsonb, например
+  `{"message_ids": [9, 10], "gap_minutes": 47}`) — на какие именно сообщения
+  опирается вывод.
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## Архитектура системы правил
+
+```
+App\Analysis\AnalysisRule        — интерфейс: key(), configSchema(), evaluate($dialog, $config)
+App\Analysis\RuleRegistry        — 'key' → класс-обработчик, config/analysis_rules.php
+App\Analysis\AnalysisRunner      — грузит enabled-правила из БД, резолвит класс через реестр,
+                                    сохраняет найденные события, старые события диалога перед этим удаляет
+App\Analysis\Rules\*             — сами правила
+```
+
+Каждое правило — маленький класс без знания о контроллерах, HTTP или Eloquent
+специфики: на вход диалог с сообщениями и конфиг, на выход массив событий.
+`configSchema()` описывает параметры правила (`{key, label, type, default}`),
+и по этому описанию фронтенд сам строит форму редактирования в разделе
+«Правила анализа» — не нужно писать отдельную форму под каждое правило.
+
+**Как расширять:**
+
+- Поменять порог, критичность, текст или список ключевых слов у
+  существующего правила — правка в БД через UI, код не трогаем.
+  Включить/выключить правило — тоже.
+- Добавить принципиально новый тип правила — один класс, реализующий
+  `AnalysisRule` (~20–40 строк), одна строка в `config/analysis_rules.php` и
+  одна строка в `AnalysisRuleSeeder`. Контроллеры, модели и `AnalysisRunner`
+  не меняются.
+
+Осознанно не делали generic-конструктор условий (JSON DSL/скриптинг) для
+правил «совсем без кода» — на объём этой задачи это оверинжиниринг и лишняя
+поверхность для ошибок (нужно валидировать произвольные пользовательские
+выражения). Текущий баланс — быстро настраиваемые параметры через БД,
+быстро добавляемая новая логика через маленький класс — показался более
+оправданным compromise.
+
+Анализ запускается: (1) один раз при `db:seed` — сразу после установки в
+системе есть готовые события; (2) вручную кнопкой «Повторить анализ» на
+странице диалога — полезно, чтобы сразу увидеть эффект от правки правила.
+В проде с реальным потоком сообщений это стоило бы вынести в queue-джобу,
+которая срабатывает при создании нового сообщения в диалоге.
+
+## Правила анализа: обоснование и польза для бизнеса
+
+| Правило | Что ищет | Критичность | Зачем бизнесу |
+|---|---|---|---|
+| **Долгий ответ менеджера** (`slow_response`) | Клиент написал, менеджер ответил позже порога (по умолчанию 30 мин); при разрыве от 2×порога критичность повышается до `high` | medium/high | Прямая метрика SLA по скорости реакции — команда теряет клиентов не из-за качества ответа, а из-за задержки. Позволяет находить конкретные случаи для разбора с менеджером, а не только усреднённую метрику. |
+| **Клиент перестал отвечать** (`client_silence_after_manager`) | Последнее сообщение в диалоге — от менеджера, ответа клиента не было | high | Прямой сигнал потерянного контакта — ровно то, что просили в примере ТЗ («клиент перестал отвечать после сообщения №14»). Помогает отличить диалоги, которые тихо «зависли», от явно закрытых. |
+| **Возможное возражение клиента** (`possible_objection`) | Сообщение клиента содержит один из маркеров возражения (настраиваемый список: «дорого», «подумаю», «конкурент» и т.п.) | low | Даже если сделка в итоге состоялась, возражения — сырьё для базы знаний и обучения новых менеджеров: как реально звучат сомнения клиентов и как их отрабатывают на практике. |
+| **Длинный диалог без продажи** (`long_effort_no_sale`) | В диалоге больше `min_messages` сообщений (по умолчанию 10), а результат не «купил» | medium | Менеджер потратил много времени, а сделки нет — такие диалоги стоит разобрать вручную в первую очередь: либо процесс продажи неэффективен, либо клиент был некачественным лидом. Приоритизация ручного QA при ограниченном времени руководителя. |
+
+Правила выбирались так, чтобы покрывать разные измерения диалога: тайминг
+(1), то, чем диалог закончился (2), содержание сообщений (3) и агрегат
+«объём усилий vs результат» (4) — а не дублировать одну и ту же эвристику
+под разными именами.
+
+## Тестовые данные
+
+`DialogSeeder` создаёт 6 диалогов с реалистичными сценариями (успешная
+продажа, явный отказ без возражений, отработанное возражение с итоговой
+продажей, клиент перестал отвечать после нескольких follow-up от менеджера,
+явно медленные ответы менеджера, длинный диалог без результата) — с
+управляемыми интервалами между сообщениями, чтобы на датасете гарантированно
+срабатывало каждое из 4 правил (проверено: 11 событий на 6 диалогов,
+все 4 правила сработали минимум дважды).
+
+## Ограничения и что делать дальше
+
+- Нет ролей/RBAC — любой залогиненный пользователь видит и правит всё.
+  Для реального внутреннего инструмента стоило бы завести роль «аналитик»/
+  «менеджер» и ограничить видимость диалогов по `manager_id`.
+- Анализ синхронный (выполняется в текущем HTTP-запросе). Для датасета
+  такого размера это незаметно; при реальном объёме сообщений — вынести в
+  queue-джобу, повешенную на создание сообщения.
+- Правила настраиваются через БД, но добавление нового *типа* правила всё
+  ещё требует деплоя кода (см. «Архитектура системы правил» — это
+  осознанный компромисс, а не недосмотр).
+- `possible_objection` — простой substring-поиск по стемам слов, без
+  морфологического анализа или NLP; можно давать ложные срабатывания на
+  омонимах. Для продакшена — рассмотреть модель классификации текста.
+- `slow_response` не отличает «жду ответа клиента» от исходящего
+  follow-up-сообщения менеджера после долгой паузы — оба типа разрывов
+  между «последнее сообщение клиента» и «следующее сообщение менеджера»
+  считаются одинаково (наглядно видно на диалоге со сценарием «прекращение
+  общения» в сидере, где follow-up через сутки тоже помечается как
+  «долгий ответ»).
