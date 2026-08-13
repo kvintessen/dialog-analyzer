@@ -17,6 +17,16 @@ class RuleRegistry
      */
     public static function resolve(string $key): ?string
     {
-        return static::all()[$key] ?? null;
+        $class = static::all()[$key] ?? null;
+
+        if ($class === null) {
+            return null;
+        }
+
+        if (! is_a($class, AnalysisRule::class, true)) {
+            throw new \RuntimeException("Analysis rule [{$key}] resolves to [{$class}], which does not implement ".AnalysisRule::class.'.');
+        }
+
+        return $class;
     }
 }
