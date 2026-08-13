@@ -26,16 +26,20 @@ export function useAnalysisRuleForm(rule) {
         rule.config_schema.forEach((field) => {
             const value = configValues[field.key];
 
-            if (field.type === 'string_list') {
-                config[field.key] = String(value ?? '')
-                    .split('\n')
-                    .map((line) => line.trim())
-                    .filter(Boolean);
-            } else if (field.type === 'integer') {
-                const parsed = Number.parseInt(value, 10);
-                config[field.key] = Number.isNaN(parsed) ? value : parsed;
-            } else {
-                config[field.key] = value;
+            switch (field.type) {
+                case 'string_list':
+                    config[field.key] = String(value ?? '')
+                        .split('\n')
+                        .map((line) => line.trim())
+                        .filter(Boolean);
+                    break;
+                case 'integer': {
+                    const parsed = Number.parseInt(value, 10);
+                    config[field.key] = Number.isNaN(parsed) ? value : parsed;
+                    break;
+                }
+                default:
+                    config[field.key] = value;
             }
         });
 
