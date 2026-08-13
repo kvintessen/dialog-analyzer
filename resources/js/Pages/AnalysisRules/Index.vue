@@ -1,37 +1,10 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import {
-    Dialog,
-    DialogContent,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
-import { Textarea } from '@/components/ui/textarea';
-import { severityBadgeClass, severityLabel } from '@/lib/severity';
-import { Head, router, useForm, usePage } from '@inertiajs/vue3';
-import { computed, reactive, ref } from 'vue';
+import { Head, router, usePage } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
 import { toast } from 'vue-sonner';
+import RuleEditorDialog from './RuleEditorDialog.vue';
+import RulesTable from './RulesTable.vue';
 
 defineProps({
     rules: { type: Array, required: true },
@@ -41,109 +14,12 @@ const canEdit = computed(() => usePage().props.auth.user.role === 'analyst');
 
 const dialogOpen = ref(false);
 const editingRule = ref(null);
-const configValues = reactive({});
-
-const form = useForm({
-    name: '',
-    description: '',
-    severity: 'medium',
-    enabled: true,
-    config: {},
-});
+const editingKey = ref(0);
 
 function openEditor(rule) {
     editingRule.value = rule;
-    form.clearErrors();
-    form.name = rule.name;
-    form.description = rule.description ?? '';
-    form.severity = rule.severity;
-    form.enabled = rule.enabled;
-
-    Object.keys(configValues).forEach((key) => delete configValues[key]);
-    rule.config_schema.forEach((field) => {
-        const current = rule.config?.[field.key] ?? field.default;
-        configValues[field.key] =
-            field.type === 'string_list'
-                ? (Array.isArray(current) ? current.join('\n') : '')
-                : current;
-    });
-
+    editingKey.value += 1;
     dialogOpen.value = true;
-}
-
-// Mirrors UpdateAnalysisRuleRequest::configFieldRules() so obviously invalid
-// input is caught before a round trip, without duplicating the server as the
-// source of truth — the backend still re-validates on submit.
-function validate() {
-    const errors = {};
-
-    if (!form.name.trim()) {
-        errors.name = 'Поле «Название» обязательно для заполнения.';
-    } else if (form.name.length > 255) {
-        errors.name = 'Поле «Название» не должно превышать 255 символов.';
-    }
-
-    editingRule.value.config_schema.forEach((field) => {
-        const value = configValues[field.key];
-        const errorKey = `config.${field.key}`;
-
-        if (field.type === 'integer') {
-            if (String(value ?? '').trim() === '' || Number.isNaN(Number.parseInt(value, 10))) {
-                errors[errorKey] = `Поле «${field.label}» обязательно для заполнения.`;
-            }
-        } else if (field.type === 'string_list') {
-            const items = String(value ?? '')
-                .split('\n')
-                .map((line) => line.trim())
-                .filter(Boolean);
-
-            if (items.length === 0) {
-                errors[errorKey] = `Поле «${field.label}» обязательно для заполнения.`;
-            }
-        } else if (!String(value ?? '').trim()) {
-            errors[errorKey] = `Поле «${field.label}» обязательно для заполнения.`;
-        }
-    });
-
-    form.clearErrors();
-    form.setError(errors);
-
-    return Object.keys(errors).length === 0;
-}
-
-function submit() {
-    if (!validate()) {
-        toast.error('Проверьте поля формы');
-        return;
-    }
-
-    const config = {};
-
-    editingRule.value.config_schema.forEach((field) => {
-        const value = configValues[field.key];
-
-        if (field.type === 'string_list') {
-            config[field.key] = String(value ?? '')
-                .split('\n')
-                .map((line) => line.trim())
-                .filter(Boolean);
-        } else if (field.type === 'integer') {
-            config[field.key] = Number.parseInt(value, 10) || 0;
-        } else {
-            config[field.key] = value;
-        }
-    });
-
-    form.config = config;
-
-    form.patch(route('analysis-rules.update', editingRule.value.id), {
-        preserveScroll: true,
-        onSuccess: () => {
-            dialogOpen.value = false;
-            toast.success('Правило обновлено');
-        },
-        onError: () => toast.error('Проверьте поля формы'),
-    });
 }
 
 function toggleEnabled(rule, enabled) {
@@ -179,122 +55,22 @@ function toggleEnabled(rule, enabled) {
             <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
                 <div class="overflow-hidden bg-card text-card-foreground shadow-sm sm:rounded-lg">
                     <div class="overflow-x-auto p-4">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Название</TableHead>
-                                    <TableHead>Критичность</TableHead>
-                                    <TableHead>Статус</TableHead>
-                                    <TableHead class="text-right">Действия</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                <TableRow v-for="rule in rules" :key="rule.id">
-                                    <TableCell>
-                                        <div class="font-medium text-foreground">{{ rule.name }}</div>
-                                        <div class="text-xs text-muted-foreground">{{ rule.description }}</div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge :class="severityBadgeClass(rule.severity)">
-                                            {{ severityLabel(rule.severity) }}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Switch
-                                            :model-value="rule.enabled"
-                                            :disabled="!canEdit"
-                                            @update:model-value="(value) => toggleEnabled(rule, value)"
-                                        />
-                                    </TableCell>
-                                    <TableCell class="text-right">
-                                        <Button
-                                            v-if="canEdit"
-                                            size="sm"
-                                            variant="outline"
-                                            @click="openEditor(rule)"
-                                        >
-                                            Редактировать
-                                        </Button>
-                                    </TableCell>
-                                </TableRow>
-                            </TableBody>
-                        </Table>
+                        <RulesTable
+                            :rules="rules"
+                            :can-edit="canEdit"
+                            @edit="openEditor"
+                            @toggle="toggleEnabled"
+                        />
                     </div>
                 </div>
             </div>
         </div>
 
-        <Dialog v-model:open="dialogOpen">
-            <DialogContent v-if="editingRule" class="max-w-md">
-                <DialogHeader>
-                    <DialogTitle>Редактирование правила</DialogTitle>
-                </DialogHeader>
-
-                <form class="space-y-4" @submit.prevent="submit">
-                    <div class="space-y-1">
-                        <Label for="rule-name">Название</Label>
-                        <Input id="rule-name" v-model="form.name" />
-                        <p v-if="form.errors.name" class="text-xs text-destructive">{{ form.errors.name }}</p>
-                    </div>
-
-                    <div class="space-y-1">
-                        <Label for="rule-description">Описание</Label>
-                        <Textarea id="rule-description" v-model="form.description" rows="2" />
-                    </div>
-
-                    <div class="space-y-1">
-                        <Label>Критичность по умолчанию</Label>
-                        <Select v-model="form.severity">
-                            <SelectTrigger>
-                                <SelectValue placeholder="Критичность" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="low">Низкая</SelectItem>
-                                <SelectItem value="medium">Средняя</SelectItem>
-                                <SelectItem value="high">Высокая</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    <div class="flex items-center gap-2">
-                        <Switch v-model="form.enabled" />
-                        <Label>Правило включено</Label>
-                    </div>
-
-                    <div
-                        v-for="field in editingRule.config_schema"
-                        :key="field.key"
-                        class="space-y-1"
-                    >
-                        <Label :for="`config-${field.key}`">{{ field.label }}</Label>
-                        <Input
-                            v-if="field.type === 'integer'"
-                            :id="`config-${field.key}`"
-                            v-model="configValues[field.key]"
-                            type="number"
-                        />
-                        <Textarea
-                            v-else-if="field.type === 'string_list'"
-                            :id="`config-${field.key}`"
-                            v-model="configValues[field.key]"
-                            rows="4"
-                            placeholder="По одному значению на строку"
-                        />
-                        <Input
-                            v-else
-                            :id="`config-${field.key}`"
-                            v-model="configValues[field.key]"
-                        />
-                        <p v-if="form.errors[`config.${field.key}`]" class="text-xs text-destructive">
-                            {{ form.errors[`config.${field.key}`] }}
-                        </p>
-                    </div>
-
-                    <DialogFooter>
-                        <Button type="submit" :disabled="form.processing">Сохранить</Button>
-                    </DialogFooter>
-                </form>
-            </DialogContent>
-        </Dialog>
+        <RuleEditorDialog
+            v-if="editingRule"
+            :key="editingKey"
+            v-model:open="dialogOpen"
+            :rule="editingRule"
+        />
     </AuthenticatedLayout>
 </template>

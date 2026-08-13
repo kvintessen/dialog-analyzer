@@ -13,6 +13,9 @@ export default {
 
     theme: {
     	extend: {
+    		aria: {
+    			invalid: 'invalid="true"',
+    		},
     		fontFamily: {
     			sans: [
     				'Inter',
