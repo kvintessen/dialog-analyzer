@@ -53,7 +53,6 @@ Laravel 13 (PHP 8.3) + Inertia v2 + Vue 3 (чистый JS, без TS) + shadcn-
 | `laravel-tdd` | Перед новой фичей/багфиксом — тест сначала |
 | `vue-best-practices` | Любая работа с `.vue` |
 | `shadcn` | Добавление/кастомизация shadcn-vue компонентов |
-| `requesting-code-review` | По завершении заметной задачи, перед merge |
 
 Вызываются автоматически по контексту задачи.
 
