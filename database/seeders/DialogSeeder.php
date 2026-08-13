@@ -23,6 +23,9 @@ class DialogSeeder extends Seeder
         $this->ghostingAfterFollowUps($igor);
         $this->slowManagerResponses($ivan);
         $this->longDialogWithoutSale($anna);
+        $this->quickWin($igor);
+        $this->politeDecline($igor);
+        $this->fastPurchaseNoIssues($anna);
     }
 
     /** @param  array<int, array{0: MessageSender, 1: string, 2: Carbon}>  $messages */
@@ -141,6 +144,44 @@ class DialogSeeder extends Seeder
             [MessageSender::Client, 'Уже лучше. А есть тестовый период?', $base->copy()->addMinutes(40)],
             [MessageSender::Manager, 'Да, 14 дней бесплатно, без привязки карты.', $base->copy()->addMinutes(44)],
             [MessageSender::Client, 'Спасибо, воздержимся пока — обсудим внутри команды и вернёмся, если решим двигаться дальше.', $base->copy()->addMinutes(50)],
+        ]);
+    }
+
+    private function quickWin(User $manager): void
+    {
+        $base = Carbon::parse('2026-08-12 10:00:00');
+
+        $this->seedDialog($manager->id, 'Елена Соколова', DialogResult::Purchased, [
+            [MessageSender::Client, 'Добрый день! Хочу подключить тариф «Старт» для 3 сотрудников.', $base->copy()],
+            [MessageSender::Manager, 'Добрый день, Елена! Отлично, оформляю — реквизиты пришлю на почту через минуту.', $base->copy()->addMinutes(3)],
+            [MessageSender::Client, 'Супер, спасибо, уже жду.', $base->copy()->addMinutes(5)],
+            [MessageSender::Manager, 'Договор и ссылка на оплату отправлены.', $base->copy()->addMinutes(6)],
+            [MessageSender::Client, 'Оплатила, спасибо за скорость!', $base->copy()->addMinutes(15)],
+        ]);
+    }
+
+    private function politeDecline(User $manager): void
+    {
+        $base = Carbon::parse('2026-08-12 15:00:00');
+
+        $this->seedDialog($manager->id, 'Артём Беляев', DialogResult::NotPurchased, [
+            [MessageSender::Client, 'Здравствуйте, интересует ваш продукт для отдела из 2 человек.', $base->copy()],
+            [MessageSender::Manager, 'Добрый день! Для такой команды подойдёт тариф «Старт», 9 000 ₽/мес.', $base->copy()->addMinutes(4)],
+            [MessageSender::Client, 'Понял, спасибо. Пока рано — вернёмся к вопросу через квартал.', $base->copy()->addMinutes(10)],
+            [MessageSender::Manager, 'Хорошо, буду на связи, если появятся вопросы раньше — пишите.', $base->copy()->addMinutes(12)],
+        ]);
+    }
+
+    private function fastPurchaseNoIssues(User $manager): void
+    {
+        $base = Carbon::parse('2026-08-13 09:00:00');
+
+        $this->seedDialog($manager->id, 'Виктор Громов', DialogResult::Purchased, [
+            [MessageSender::Client, 'Добрый день! Уже сравнивал варианты, беру тариф «Команда» на 10 мест.', $base->copy()],
+            [MessageSender::Manager, 'Добрый день, Виктор! Отлично, оформляю — договор пришлю сейчас же.', $base->copy()->addMinutes(2)],
+            [MessageSender::Client, 'Получил, подписываю.', $base->copy()->addMinutes(8)],
+            [MessageSender::Manager, 'Спасибо, доступ откроется сразу после оплаты.', $base->copy()->addMinutes(9)],
+            [MessageSender::Client, 'Оплата отправлена.', $base->copy()->addMinutes(14)],
         ]);
     }
 }
