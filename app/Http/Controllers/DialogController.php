@@ -2,11 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\DialogSummaryResource;
 use App\Models\AnalysisEvent;
 use App\Models\Dialog;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -17,26 +16,13 @@ class DialogController extends Controller
     {
         $user = $request->user();
 
-        $dialogs = Dialog::query()
-            ->when(! $user->isAnalyst(), fn ($query) => $query->where('manager_id', $user->id))
-            ->with(['manager:id,name', 'events:id,dialog_id,severity'])
-            ->withCount('messages')
-            ->withMax('messages as last_message_at', 'sent_at')
-            ->get()
+        $dialogs = Dialog::visibleTo($user)->withSummaryAggregates()->get()
             ->sortByDesc('last_message_at')
-            ->values()
-            ->map(fn (Dialog $dialog) => [
-                'id' => $dialog->id,
-                'client_name' => $dialog->client_name,
-                'manager_name' => $dialog->manager->name,
-                'result' => $dialog->result->value,
-                'messages_count' => $dialog->messages_count,
-                'last_message_at' => $dialog->last_message_at ? Carbon::parse($dialog->last_message_at) : null,
-                'events_count' => $dialog->events->count(),
-                'max_severity' => $this->maxSeverity($dialog->events),
-            ]);
+            ->values();
 
-        return Inertia::render('Dialogs/Index', ['dialogs' => $dialogs]);
+        return Inertia::render('Dialogs/Index', [
+            'dialogs' => DialogSummaryResource::collection($dialogs)->resolve(),
+        ]);
     }
 
     public function show(Dialog $dialog): Response
@@ -70,21 +56,5 @@ class DialogController extends Controller
                     'rule_name' => $event->rule->name,
                 ]),
         ]);
-    }
-
-    /**
-     * @param  Collection<int, AnalysisEvent>  $events
-     */
-    private function maxSeverity(Collection $events): ?string
-    {
-        if ($events->isEmpty()) {
-            return null;
-        }
-
-        return $events
-            ->sortBy(fn (AnalysisEvent $event) => $event->severity->rank())
-            ->last()
-            ->severity
-            ->value;
     }
 }
