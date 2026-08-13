@@ -32,7 +32,7 @@ class AnalysisRuleSeeder extends Seeder
                 'description' => 'Последнее сообщение в диалоге — от менеджера, ответа клиента не последовало.',
                 'severity' => EventSeverity::High,
                 'enabled' => true,
-                'config' => [],
+                'config' => ['threshold_minutes' => 60],
             ]
         );
 
